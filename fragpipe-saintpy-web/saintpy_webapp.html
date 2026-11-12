@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FragPipe to saintPy Studio — 100% In-Browser AP-MS Interactome Scoring & Publication Visualization Suite" />
+  <title>FragPipe → saintPy Studio | In-Browser AP-MS Interactome Scoring &amp; Visualization</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="brand-group">
+      <div class="brand-logo">SP</div>
+      <div>
+        <h1 class="brand-title">
+          FragPipe → saintPy Studio
+          <span class="brand-badge">100% Client-Side AP-MS Engine</span>
+        </h1>
+        <p class="brand-subtitle">
+          Significance Analysis of INTeractome (SPC Generalized Poisson &amp; MS1 Log-Intensity MRF) · Zero Server Upload
+        </p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" id="btn-theme-toggle" class="header-link" title="Switch between Light and Dark Studio Theme">
+        🌙 Dark Mode
+      </button>
+      <a class="header-link" href="https://github.com/FossatiLab/saintPy" target="_blank" rel="noopener">
+        FossatiLab / saintPy GitHub ↗
+      </a>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- Instant Benchmark Loader Bar -->
+    <section class="demo-banner">
+      <div class="demo-banner-label">
+        <span>🧪 <strong>Instant Benchmark Datasets</strong></span>
+        <span style="color:var(--text-muted);font-weight:400;font-size:12px;">Click to load &amp; score real FragPipe or official saintPy test cohorts</span>
+      </div>
+      <div class="demo-buttons">
+        <button type="button" class="demo-btn active-demo" data-demo-key="fragpipe_apms">
+          <span>1. FragPipe AP-MS Cohort</span>
+          <span class="demo-btn-tag">4 Baits · 16 IPs</span>
+        </button>
+        <button type="button" class="demo-btn" data-demo-key="saintpy_spc">
+          <span>2. saintPy SPC Benchmark</span>
+          <span class="demo-btn-tag">27 Baits · 1,207 Preys</span>
+        </button>
+        <button type="button" class="demo-btn" data-demo-key="saintpy_ms1">
+          <span>3. saintPy MS1 Intensity</span>
+          <span class="demo-btn-tag">CDC23 · INT-MRF</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Status Banner -->
+    <div id="global-status-banner" class="status-banner info" style="display:none;"></div>
+
+    <!-- Main Two-Column Workspace -->
+    <div class="workspace-grid">
+      <!-- LEFT COLUMN: Ingestion, Intuitive Bait-Prey Designer, and Model Parameters -->
+      <aside>
+        <!-- STEP 1: Data Input & Format -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <span class="step-num">1</span> Proteomics Input Files
+            </h2>
+          </div>
+          <div class="panel-body">
+            <div class="mode-tabs">
+              <button type="button" id="tab-mode-fragpipe" class="mode-tab active">
+                FragPipe Output (.tsv)
+              </button>
+              <button type="button" id="tab-mode-saintpy" class="mode-tab">
+                saintPy / SAINT (3-File)
+              </button>
+            </div>
+
+            <!-- FragPipe Upload Panel -->
+            <div id="section-input-fragpipe">
+              <div id="fp-main-dropzone" class="dropzone">
+                <div class="dropzone-title">Drop FragPipe <code>combined_protein.tsv</code></div>
+                <div class="dropzone-sub">Also accepts <code>protein.tsv</code>, <code>reprint.spc.tsv</code>, or <code>reprint.int.tsv</code></div>
+                <input type="file" id="file-fp-main" accept=".tsv,.txt,.csv" />
+              </div>
+
+              <div id="fp-annot-dropzone" class="dropzone" style="padding:10px;">
+                <div class="dropzone-title" style="font-size:12px;">Optional: <code>experiment_annotation.tsv</code> / <code>fp-manifest</code></div>
+                <div class="dropzone-sub">Auto-maps sample conditions &amp; replicates</div>
+                <input type="file" id="file-fp-annot" accept=".tsv,.txt,.csv,.fp-manifest" />
+              </div>
+
+              <div class="form-group" style="margin-bottom:10px;">
+                <label class="form-label" for="fp-metric-select">
+                  <span>FragPipe Quantification Column</span>
+                  <span style="color:var(--primary);font-size:11px;">Auto-sets SPC / INT</span>
+                </label>
+                <select id="fp-metric-select" class="form-control"></select>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="fp-prey-id-select">Prey ID Column</label>
+                  <select id="fp-prey-id-select" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="fp-gene-col-select">Prey Gene Column</label>
+                  <select id="fp-gene-col-select" class="form-control"></select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Direct saintPy 3-File Upload Panel -->
+            <div id="section-input-saintpy" style="display:none;">
+              <div id="sp-bait-dropzone" class="dropzone">
+                <div class="dropzone-title">1. Bait / Samples File (<code>bait.csv</code>)</div>
+                <div class="dropzone-sub">Columns: <code>ip_id, bait_id, is_control</code> (or headerless SAINT)</div>
+                <input type="file" id="file-sp-bait" accept=".csv,.tsv,.txt" />
+              </div>
+              <div id="sp-inter-dropzone" class="dropzone">
+                <div class="dropzone-title">2. Interactions File (<code>inter.csv</code>)</div>
+                <div class="dropzone-sub">Columns: <code>ip_id, prey_id, quant</code></div>
+                <input type="file" id="file-sp-inter" accept=".csv,.tsv,.txt" />
+              </div>
+              <div id="sp-prey-dropzone" class="dropzone" style="padding:10px;">
+                <div class="dropzone-title" style="font-size:12px;">3. Optional Prey File (<code>prey.csv</code>)</div>
+                <div class="dropzone-sub">Columns: <code>prey_id, gene_name, length</code></div>
+                <input type="file" id="file-sp-prey" accept=".csv,.tsv,.txt" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2: Intuitive Bait & Control Experimental Designer -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <span class="step-num">2</span> Bait, Control &amp; Prey Designer
+            </h2>
+            <button type="button" id="btn-export-inputs" class="btn btn-sm" title="Download formatted bait.csv, prey.csv, inter.csv">
+              ⬇ Export Inputs
+            </button>
+          </div>
+          <div class="panel-body">
+            <!-- Cohort & Self-Pulldown QC Pills -->
+            <div id="cohort-summary-bar" class="cohort-summary-bar"></div>
+
+            <!-- Quick Search & Bulk Assign Bar -->
+            <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">
+              <input
+                type="text"
+                id="sample-filter-input"
+                class="form-control"
+                placeholder="Filter samples (e.g. CTRL, GFP, rep)..."
+                style="flex:1;min-width:130px;padding:5px 8px;font-size:12px;"
+              />
+              <button type="button" id="btn-bulk-ctrl" class="btn btn-sm" title="Mark all filtered samples as Negative Control (C)">
+                Mark Filtered → Ctrl (C)
+              </button>
+            </div>
+            <div style="display:flex;gap:6px;margin-bottom:10px;">
+              <input
+                type="text"
+                id="bulk-bait-name-input"
+                class="form-control"
+                placeholder="New Bait ID for filtered..."
+                style="flex:1;padding:5px 8px;font-size:12px;"
+              />
+              <button type="button" id="btn-bulk-assign-bait" class="btn btn-sm">
+                Assign Bait ID
+              </button>
+            </div>
+
+            <!-- Interactive Sample Table -->
+            <div class="sample-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>IP Sample (<code>ip_id</code>)</th>
+                    <th>Bait Group (<code>bait_id</code>)</th>
+                    <th>Role (Click to Cycle)</th>
+                  </tr>
+                </thead>
+                <tbody id="sample-designer-tbody"></tbody>
+              </table>
+            </div>
+
+            <!-- Prey Hygiene & Manual Selection (FragPipe mode) -->
+            <div id="section-prey-hygiene" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border-color);">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-weight:700;font-size:12.5px;">Prey Hygiene &amp; Selection Filters</span>
+                <button type="button" id="btn-toggle-prey-drawer" class="btn btn-sm">
+                  🔍 Inspect / Toggle Preys
+                </button>
+              </div>
+
+              <div class="filter-chips">
+                <label class="filter-chip">
+                  <input type="checkbox" id="cb-exclude-contam" checked />
+                  <span>Drop Contaminants (<code>contam_</code>)</span>
+                </label>
+                <label class="filter-chip">
+                  <input type="checkbox" id="cb-exclude-decoy" checked />
+                  <span>Drop Decoys (<code>rev_</code>)</span>
+                </label>
+              </div>
+
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label class="form-label" for="inp-min-prob">Min Prot Prob</label>
+                  <input type="number" id="inp-min-prob" class="form-control" value="0.90" step="0.05" min="0" max="1" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="inp-min-peptides">Min Peptides</label>
+                  <input type="number" id="inp-min-peptides" class="form-control" value="1" step="1" min="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="inp-min-quant">Min Max Quant</label>
+                  <input type="number" id="inp-min-quant" class="form-control" value="1" step="1" min="0" />
+                </div>
+              </div>
+
+              <div id="prey-filter-stats-bar" class="cohort-summary-bar" style="margin-bottom:6px;"></div>
+
+              <!-- Expandable Prey Inspector Drawer -->
+              <div id="prey-preview-drawer" style="display:none;margin-top:8px;">
+                <input
+                  type="text"
+                  id="prey-preview-search"
+                  class="form-control"
+                  placeholder="Search preys by Gene, UniProt ID, or description..."
+                  style="width:100%;margin-bottom:6px;font-size:12px;"
+                />
+                <div class="sample-table-wrap" style="max-height:210px;">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Use</th>
+                        <th>Prey ID</th>
+                        <th>Gene</th>
+                        <th>Test Sum</th>
+                        <th>Ctrl Sum</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody id="prey-preview-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3: saintPy Model Parameters & Execution -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              <span class="step-num">3</span> saintPy Model Parameters
+            </h2>
+          </div>
+          <div class="panel-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="opt-quant-type">Quantification Model</label>
+                <select id="opt-quant-type" class="form-control">
+                  <option value="spc">SPC (Generalized Poisson MRF)</option>
+                  <option value="int">INT (Log-Intensity Gaussian MRF)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="opt-self-mask">Bait Self-Interaction</label>
+                <select id="opt-self-mask" class="form-control" title="How to handle the bait protein appearing as a prey in its own pulldown">
+                  <option value="smart" selected>Smart Auto-Mask (0 in SPC / NaN in INT)</option>
+                  <option value="saintpy">Strict saintPy (Zeroes gene_name == bait_id)</option>
+                  <option value="keep">Keep Self-Interactions (Score Bait Protein)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-3">
+              <div class="form-group">
+                <label class="form-label" for="opt-L" title="Maximum top control IPs compressed per prey">Top Controls (<code>L</code>)</label>
+                <input type="number" id="opt-L" class="form-control" value="100" min="1" max="500" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="opt-R" title="Maximum top replicates averaged per bait">Max Reps (<code>R</code>)</label>
+                <input type="number" id="opt-R" class="form-control" value="100" min="1" max="500" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="opt-f" title="Frequency threshold for MRF">Freq (<code>f</code>)</label>
+                <input type="number" id="opt-f" class="form-control" value="0.0" step="0.05" min="0" max="1" />
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:14px;">
+              <label class="form-label" for="opt-runtime-engine">In-Browser Execution Runtime</label>
+              <select id="opt-runtime-engine" class="form-control">
+                <option value="native" selected>⚡ Native JS Float64 Engine (Instant, Offline-Ready)</option>
+                <option value="pyodide">🐍 Pyodide WebAssembly (Python 3.12 + NumPy/SciPy in Browser)</option>
+              </select>
+            </div>
+
+            <button type="button" id="btn-run-saintpy" class="btn btn-primary" style="width:100%;padding:11px;font-size:13.5px;">
+              ▶ Run saintPy Analysis
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- RIGHT COLUMN: Auto-Generated Graphics, Replicate Inspector, and Results Explorer -->
+      <section>
+        <!-- Top KPI Strip -->
+        <div class="kpi-strip">
+          <div class="kpi-card">
+            <div class="kpi-label">Experimental Design</div>
+            <div id="kpi-baits-val" class="kpi-value">—</div>
+            <div id="kpi-baits-sub" class="kpi-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Evaluated Preys</div>
+            <div id="kpi-preys-val" class="kpi-value">—</div>
+            <div id="kpi-preys-sub" class="kpi-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">High-Confidence Hits</div>
+            <div id="kpi-sig-val" class="kpi-value" style="color:var(--emerald);">—</div>
+            <div id="kpi-sig-sub" class="kpi-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Shared Complex Preys</div>
+            <div id="kpi-shared-val" class="kpi-value" style="color:var(--primary);">—</div>
+            <div id="kpi-shared-sub" class="kpi-sub">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">saintPy Convergence</div>
+            <div id="kpi-model-val" class="kpi-value" style="font-size:17px;">—</div>
+            <div id="kpi-model-sub" class="kpi-sub">—</div>
+          </div>
+        </div>
+
+        <!-- Auto-Generated Graphical Suite Card -->
+        <div class="panel-card">
+          <div class="viz-tabs-bar">
+            <div class="viz-tabs">
+              <button type="button" class="viz-tab active" data-viz-tab="dotplot">
+                🔵 Bait × Prey DotPlot
+              </button>
+              <button type="button" class="viz-tab" data-viz-tab="volcano">
+                🌋 Volcano &amp; Significance
+              </button>
+              <button type="button" class="viz-tab" data-viz-tab="network">
+                🕸️ Interactome Network
+              </button>
+              <button type="button" class="viz-tab" data-viz-tab="qc">
+                📈 Score Distribution &amp; ICM QC
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button type="button" id="btn-export-svg" class="btn btn-sm">
+                ⬇ Export Vector SVG
+              </button>
+              <button type="button" id="btn-export-png" class="btn btn-sm">
+                📷 Export Hi-Res PNG
+              </button>
+            </div>
+          </div>
+
+          <!-- Contextual Chart Controls -->
+          <div class="viz-controls-bar">
+            <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+              <label class="viz-control-item">
+                <span>Bait:</span>
+                <select id="viz-bait-filter" class="form-control" style="padding:4px 8px;font-size:12px;"></select>
+              </label>
+
+              <label class="viz-control-item">
+                <span>SaintScore ≥ <strong id="viz-min-score-val">0.80</strong></span>
+                <input type="range" id="viz-min-score" min="0" max="0.99" step="0.05" value="0.80" style="width:90px;" />
+              </label>
+
+              <label class="viz-control-item">
+                <span>BFDR ≤</span>
+                <select id="viz-max-bfdr" class="form-control" style="padding:4px 8px;font-size:12px;">
+                  <option value="0.01">0.01 (1%)</option>
+                  <option value="0.05" selected>0.05 (5%)</option>
+                  <option value="0.10">0.10 (10%)</option>
+                  <option value="1.00">1.00 (All)</option>
+                </select>
+              </label>
+
+              <!-- DotPlot specific controls -->
+              <span id="ctrl-group-dotplot" style="display:inline-flex;gap:12px;align-items:center;">
+                <label class="viz-control-item">
+                  <span>Top Preys/Bait:</span>
+                  <select id="viz-topn" class="form-control" style="padding:4px 8px;font-size:12px;">
+                    <option value="6">6</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                    <option value="25">25</option>
+                  </select>
+                </label>
+                <label class="viz-control-item">
+                  <span>Palette:</span>
+                  <select id="viz-colormap" class="form-control" style="padding:4px 8px;font-size:12px;">
+                    <option value="plasma" selected>Plasma</option>
+                    <option value="viridis">Viridis</option>
+                    <option value="ylgnbu">YlGnBu</option>
+                    <option value="crimson">Crimson</option>
+                  </select>
+                </label>
+              </span>
+
+              <!-- Volcano specific controls -->
+              <span id="ctrl-group-volcano" style="display:none;gap:12px;align-items:center;">
+                <label class="viz-control-item">
+                  <span>X-Axis:</span>
+                  <select id="viz-xaxis" class="form-control" style="padding:4px 8px;font-size:12px;">
+                    <option value="log2FC" selected>Log2(Fold Change)</option>
+                    <option value="logOddsScore">logOddsScore</option>
+                    <option value="log10Spec">Log10(AvgSpec+1)</option>
+                  </select>
+                </label>
+                <label class="viz-control-item">
+                  <span>Y-Axis:</span>
+                  <select id="viz-yaxis" class="form-control" style="padding:4px 8px;font-size:12px;">
+                    <option value="SaintScore" selected>SaintScore (AvgP)</option>
+                    <option value="negLog10BFDR">-Log10(BFDR)</option>
+                    <option value="MaxP">MaxP</option>
+                  </select>
+                </label>
+              </span>
+
+              <!-- Network specific controls -->
+              <span id="ctrl-group-network" style="display:none;gap:12px;align-items:center;">
+                <label class="viz-control-item" style="cursor:pointer;">
+                  <input type="checkbox" id="viz-shared-only" />
+                  <span>Highlight Shared Multi-Bait Preys Only</span>
+                </label>
+                <button type="button" id="btn-reset-network" class="btn btn-sm">
+                  ↻ Reset Layout
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <!-- Primary Graphic Canvas -->
+          <div class="canvas-scroll-box">
+            <canvas id="main-viz-canvas"></canvas>
+          </div>
+        </div>
+
+        <!-- Replicate-Level Breakdown & SAINT Model Fit Card -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">
+              🔬 Replicate Breakdown &amp; SAINT Posterior Fit Inspector
+              <span style="font-weight:400;font-size:12px;color:var(--text-muted);">(Click any dot, node, or table row)</span>
+            </h2>
+            <button type="button" id="btn-export-rep-png" class="btn btn-sm">
+              📷 Export Inspector PNG
+            </button>
+          </div>
+          <div class="panel-body">
+            <div id="selected-row-details" class="posterior-meta-grid"></div>
+            <div style="display:flex;justify-content:center;background:#ffffff;border-radius:8px;padding:6px;overflow-x:auto;">
+              <canvas id="replicate-inspector-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full Interactive saintPy Output Table -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <h2 class="panel-title">📋 saintPy Scored Interactions Table</h2>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <label style="font-size:12px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;">
+                <input type="checkbox" id="cb-export-bfdr" checked />
+                <span>Include computed BFDR in CSV</span>
+              </label>
+              <button type="button" id="btn-export-filtered-csv" class="btn btn-sm">
+                ⬇ Export Filtered CSV
+              </button>
+              <button type="button" id="btn-export-results-csv" class="btn btn-emerald btn-sm">
+                ⬇ Export Full saintPy CSV
+              </button>
+            </div>
+          </div>
+
+          <div class="viz-controls-bar" style="background:var(--bg-card);">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;width:100%;">
+              <select id="table-bait-filter" class="form-control" style="padding:5px 8px;font-size:12.5px;"></select>
+              <input
+                type="text"
+                id="table-search-input"
+                class="form-control"
+                placeholder="Search Prey ID, GeneSymbol, or Bait..."
+                style="flex:1;min-width:180px;padding:5px 10px;font-size:12.5px;"
+              />
+              <label class="viz-control-item">
+                <span>Min SaintScore:</span>
+                <select id="table-min-score" class="form-control" style="padding:5px 8px;font-size:12.5px;">
+                  <option value="0" selected>0.00 (All)</option>
+                  <option value="0.5">0.50</option>
+                  <option value="0.8">0.80</option>
+                  <option value="0.9">0.90</option>
+                  <option value="0.95">0.95</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table id="results-table" class="data-table">
+              <thead>
+                <tr>
+                  <th data-sort="Bait" style="cursor:pointer;">Bait ↕</th>
+                  <th data-sort="Prey" style="cursor:pointer;">Prey ID ↕</th>
+                  <th data-sort="PreyGene" style="cursor:pointer;">PreyGene ↕</th>
+                  <th data-sort="SaintScore" style="cursor:pointer;">SaintScore (AvgP) ↕</th>
+                  <th data-sort="BFDR" style="cursor:pointer;">BFDR ↕</th>
+                  <th data-sort="MaxP" style="cursor:pointer;">MaxP ↕</th>
+                  <th data-sort="logOddsScore" style="cursor:pointer;">logOdds ↕</th>
+                  <th data-sort="FoldChange" style="cursor:pointer;">FoldChange ↕</th>
+                  <th data-sort="AvgSpec" style="cursor:pointer;">AvgSpec ↕</th>
+                  <th>Test Replicates (<code>Spec</code>)</th>
+                  <th>Control IPs (<code>ctrlCounts</code>)</th>
+                </tr>
+              </thead>
+              <tbody id="results-tbody"></tbody>
+            </table>
+          </div>
+
+          <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--bg-card-header);border-top:1px solid var(--border-color);">
+            <span id="table-pagination-info" style="font-size:12px;color:var(--text-secondary);"></span>
+            <div style="display:flex;gap:6px;">
+              <button type="button" id="btn-prev-page" class="btn btn-sm">← Prev</button>
+              <button type="button" id="btn-next-page" class="btn btn-sm">Next →</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Floating Tooltip for Interactive Charts -->
+  <div id="chart-floating-tooltip" class="chart-tooltip"></div>
+
+  <!-- Scripts -->
+  <script src="demo-data.js"></script>
+  <script src="saintpy-engine.js"></script>
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
